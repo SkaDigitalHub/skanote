@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Notepad with PDF Preview</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f2f5 0%, #e3e7ed 100%);
+            color: #1a1a1a;
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            position: relative;
+        }
+        
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            border-radius: 2px;
+        }
+        
+        header h1 {
+            color: #1a1a1a;
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        
+        header h1 i {
+            color: #4361ee;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.6rem;
+        }
+        
+        header p {
+            color: #666;
+            font-size: 1.15rem;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+        }
+        
+        .app-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1100px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.05),
+                0 1px 2px rgba(0, 0, 0, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            padding: 32px;
+            height: fit-content;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 16px 40px rgba(0, 0, 0, 0.08),
+                0 2px 4px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        .panel h2 {
+            color: #1a1a1a;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .panel h2 i {
+            color: #4361ee;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.4rem;
+        }
+        
+        /* Modern App Switcher */
+        .app-switcher {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 28px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 
+                0 4px 20px rgba(0, 0, 0, 0.05),
+                0 1px 2px rgba(0, 0, 0, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 4px;
+        }
+        
+        .switcher-btn {
+            flex: 1;
+            padding: 18px 24px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            background: transparent;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .switcher-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .switcher-btn.active {
+            color: white;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            box-shadow: 0 4px 20px rgba(67, 97, 238, 0.25);
+        }
+        
+        .switcher-btn.active::before {
+            opacity: 1;
+        }
+        
+        .switcher-btn .icon, .switcher-btn .text {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .switcher-btn:not(.active):hover {
+            background: rgba(67, 97, 238, 0.08);
+            color: #4361ee;
+            transform: translateY(-1px);
+        }
+        
+        .app-content {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .app-content.hidden {
+            display: none;
+        }
+        
+        /* Modern Notepad Styles */
+        .notepad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+        
+        .notepad-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .notepad-actions .btn {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .view-saved-notes-btn {
+            background: linear-gradient(135deg, #7209b7, #560bad);
+            color: white;
+        }
+        
+        .view-saved-notes-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(114, 9, 183, 0.3);
+            background: linear-gradient(135deg, #560bad, #480ca8);
+        }
+        
+        #noteTitle {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1.25rem;
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        #noteTitle:focus {
+            border-color: #4361ee;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+        
+        #noteContent {
+            width: 100%;
+            height: 320px;
+            padding: 20px;
+            font-size: 1rem;
+            line-height: 1.7;
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 14px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        #noteContent:focus {
+            border-color: #4361ee;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .btn:hover::after {
+            opacity: 1;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            box-shadow: 0 4px 20px rgba(67, 97, 238, 0.25);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3a0ca3, #4361ee);
+            box-shadow: 0 8px 28px rgba(67, 97, 238, 0.35);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 4px 20px rgba(46, 204, 113, 0.25);
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            box-shadow: 0 8px 28px rgba(46, 204, 113, 0.35);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            box-shadow: 0 4px 20px rgba(231, 76, 60, 0.25);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            box-shadow: 0 8px 28px rgba(231, 76, 60, 0.35);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #d68910);
+            color: white;
+            box-shadow: 0 4px 20px rgba(243, 156, 18, 0.25);
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d68910, #f39c12);
+            box-shadow: 0 8px 28px rgba(243, 156, 18, 0.35);
+        }
+        
+        /* Modern Todo List Styles */
+        .todo-input {
+            display: flex;
+            margin-bottom: 24px;
+            gap: 12px;
+        }
+        
+        #todoInput {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 14px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        
+        #todoInput:focus {
+            border-color: #2ecc71;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.15);
+        }
+        
+        #addTodoBtn {
+            padding: 16px 28px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(46, 204, 113, 0.25);
+        }
+        
+        #addTodoBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(46, 204, 113, 0.35);
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+        
+        #todoList {
+            list-style-type: none;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        
+        #todoList::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #todoList::-webkit-scrollbar-track {
+            background: rgba(67, 97, 238, 0.05);
+            border-radius: 4px;
+        }
+        
+        #todoList::-webkit-scrollbar-thumb {
+            background: rgba(67, 97, 238, 0.2);
+            border-radius: 4px;
+        }
+        
+        #todoList::-webkit-scrollbar-thumb:hover {
+            background: rgba(67, 97, 238, 0.3);
+        }
+        
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+            border-radius: 14px;
+            border-left: 6px solid #4361ee;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+        
+        .todo-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+        
+        .todo-item.completed {
+            opacity: 0.8;
+            border-left-color: #2ecc71;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.05), rgba(46, 204, 113, 0.02));
+        }
+        
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+        
+        .todo-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .todo-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #888;
+            transition: all 0.3s ease;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .todo-actions button:hover {
+            color: #4361ee;
+            background: rgba(67, 97, 238, 0.1);
+            transform: scale(1.1);
+        }
+        
+        /* Modern Calendar Styles */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        #currentMonth {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .calendar-nav button {
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(67, 97, 238, 0.05));
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #4361ee;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .calendar-nav button:hover {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(67, 97, 238, 0.25);
+        }
+        
+        .calendar-weekdays, .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+        
+        .calendar-weekdays div {
+            text-align: center;
+            font-weight: 600;
+            padding: 14px 5px;
+            color: #4361ee;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .calendar-days div {
+            text-align: center;
+            padding: 16px 5px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .calendar-days div:hover {
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(67, 97, 238, 0.05));
+            transform: scale(1.05);
+        }
+        
+        .calendar-days div.today {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .calendar-days div.selected {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .calendar-days div.other-month {
+            color: #bbb;
+            opacity: 0.6;
+        }
+        
+        /* Modern Bottom Menu Styles */
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            display: flex;
+            justify-content: space-around;
+            padding: 18px 0;
+            z-index: 1000;
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            box-shadow: 
+                0 -8px 32px rgba(0, 0, 0, 0.1),
+                0 -1px 2px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.6);
+            border-left: 1px solid rgba(255, 255, 255, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 12px 20px;
+            border-radius: 18px;
+            position: relative;
+            color: #666;
+        }
+        
+        .menu-item:hover {
+            background: rgba(67, 97, 238, 0.08);
+            color: #4361ee;
+            transform: translateY(-6px);
+        }
+        
+        .menu-item::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .menu-item:hover::after {
+            width: 60%;
+        }
+        
+        .menu-item i {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item:hover i {
+            transform: scale(1.1);
+        }
+        
+        .menu-item span {
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        
+        .expand-button {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 
+                0 8px 32px rgba(67, 97, 238, 0.4),
+                0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            font-size: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid rgba(255, 255, 255, 0.9);
+        }
+        
+        .expand-button:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 
+                0 16px 40px rgba(67, 97, 238, 0.5),
+                0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Modern Modal Container */
+        .modal-container {
+            position: fixed;
+            bottom: 90px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 30px;
+            z-index: 999;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-container.collapsed {
+            transform: translateY(100vh);
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            border-radius: 24px 24px 0 0;
+            box-shadow: 
+                0 -16px 48px rgba(0, 0, 0, 0.15),
+                0 -2px 8px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            width: 23%;
+            min-width: 260px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 420px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-bottom: none;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            padding: 20px;
+            border-radius: 24px 24px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .close-modal {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
+        .modal-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .modal iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0 0 24px 24px;
+        }
+        
+        /* Modern Saved Notes Page */
+        .saved-notes-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 90px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(40px);
+            z-index: 2000;
+            padding: 30px;
+            overflow-y: auto;
+            animation: slideIn 0.4s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .saved-notes-page.active {
+            display: block;
+        }
+        
+        .saved-notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 36px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+        }
+        
+        .saved-notes-header h2 {
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .back-to-notepad {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 28px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(67, 97, 238, 0.25);
+        }
+        
+        .back-to-notepad:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(67, 97, 238, 0.35);
+            background: linear-gradient(135deg, #3a0ca3, #4361ee);
+        }
+        
+        .notes-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        
+        .note-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.06),
+                0 1px 2px rgba(0, 0, 0, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .note-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .note-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.12),
+                0 4px 16px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+        
+        .note-card:hover::before {
+            opacity: 1;
+        }
+        
+        .note-card h3 {
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        .note-date {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .note-preview {
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            max-height: 100px;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+        
+        .note-card-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        
+        .note-card-actions .btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+        
+        /* Modern Export PDF Modal */
+        .export-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .export-modal-content {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(40px);
+            padding: 40px;
+            border-radius: 28px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 
+                0 32px 96px rgba(0, 0, 0, 0.25),
+                0 8px 24px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        
+        .export-modal-content h2 {
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.8rem;
+        }
+        
+        .export-tabs {
+            display: flex;
+            border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+            margin-bottom: 28px;
+            gap: 4px;
+        }
+        
+        .export-tab {
+            padding: 16px 32px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #888;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .export-tab.active {
+            color: #4361ee;
+            border-bottom: 3px solid #4361ee;
+            background: rgba(67, 97, 238, 0.05);
+        }
+        
+        .export-tab:hover {
+            color: #4361ee;
+            background: rgba(67, 97, 238, 0.05);
+        }
+        
+        .export-panel {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .export-panel.active {
+            display: block;
+        }
+        
+        .note-selection {
+            max-height: 320px;
+            overflow-y: auto;
+            margin-bottom: 28px;
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .note-checkbox {
+            margin-bottom: 16px;
+            padding: 16px;
+            border-bottom: 1px solid rgba(67, 97, 238, 0.08);
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .note-checkbox:hover {
+            background: rgba(67, 97, 238, 0.04);
+        }
+        
+        .note-checkbox:last-child {
+            border-bottom: none;
+        }
+        
+        .export-options {
+            margin-bottom: 28px;
+        }
+        
+        .export-options label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 0.95rem;
+        }
+        
+        .export-options input, .export-options select, .export-options textarea {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1rem;
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .export-options textarea {
+            height: 120px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        .export-options input:focus, .export-options select:focus, .export-options textarea:focus {
+            border-color: #4361ee;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+        
+        .export-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-top: 32px;
+        }
+        
+        /* Modern PDF Preview */
+        .pdf-preview-container {
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 28px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .pdf-preview {
+            background: white;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.08),
+                0 2px 8px rgba(0, 0, 0, 0.04);
+            min-height: 400px;
+            padding: 40px;
+            position: relative;
+            border-radius: 8px;
+        }
+        
+        .pdf-page {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+            position: relative;
+        }
+        
+        .pdf-title-page {
+            text-align: center;
+            padding-top: 80px;
+        }
+        
+        .pdf-title {
+            font-size: 32px;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        
+        .pdf-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 48px;
+            font-weight: 400;
+        }
+        
+        .pdf-generated-date {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 80px;
+        }
+        
+        .pdf-section-title {
+            font-size: 22px;
+            color: #4361ee;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(67, 97, 238, 0.1);
+            font-weight: 700;
+        }
+        
+        .pdf-note-title {
+            font-size: 20px;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+        
+        .pdf-note-date {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .pdf-note-content {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 32px;
+            white-space: pre-wrap;
+        }
+        
+        .pdf-toc-item {
+            margin-bottom: 14px;
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .pdf-page-number {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .pdf-preview-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .pdf-preview-controls label {
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 0.95rem;
+        }
+        
+        .pdf-preview-controls select {
+            padding: 10px 16px;
+            border: 2px solid rgba(67, 97, 238, 0.1);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        
+        .pdf-preview-controls select:focus {
+            border-color: #4361ee;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+        }
+        
+        .pdf-editable {
+            border: 2px dashed rgba(67, 97, 238, 0.3);
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .pdf-editable:hover {
+            background: rgba(67, 97, 238, 0.05);
+            border-color: rgba(67, 97, 238, 0.5);
+        }
+        
+        /* Modern Scrollbars */
+        *::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        *::-webkit-scrollbar-track {
+            background: rgba(67, 97, 238, 0.05);
+            border-radius: 4px;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: rgba(67, 97, 238, 0.2);
+            border-radius: 4px;
+        }
+        
+        *::-webkit-scrollbar-thumb:hover {
+            background: rgba(67, 97, 238, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .modal-container {
+                flex-wrap: wrap;
+            }
+            
+            .modal {
+                width: 45%;
+                margin-bottom: 20px;
+            }
+            
+            .export-modal-content {
+                width: 95%;
+                padding: 24px;
+            }
+            
+            .export-actions {
+                flex-wrap: wrap;
+            }
+            
+            .export-actions .btn {
+                width: 100%;
+            }
+            
+            .notes-list {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+            
+            .bottom-menu {
+                padding: 16px 0;
+            }
+            
+            .menu-item {
+                padding: 10px 16px;
+            }
+            
+            .menu-item i {
+                font-size: 1.3rem;
+            }
+            
+            .menu-item span {
+                font-size: 0.8rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .modal {
+                width: 90%;
+            }
+            
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .notes-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .notepad-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .notepad-actions .btn {
+                flex: 1;
+                min-width: 60px;
+            }
+            
+            .container {
+                padding: 16px;
+            }
+            
+            .panel {
+                padding: 24px;
+            }
+            
+            .export-tab {
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+            
+            header h1 {
+                font-size: 2.2rem;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            header h1 i {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- All HTML content remains EXACTLY the same as in your original code -->
+    <!-- I'm only showing the updated CSS - the HTML is unchanged -->
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-book-open"></i> Smart Notepad</h1>
+            <p>Integrated notepad with todo list, calendar, and PDF editing</p>
+        </header>
+        
+        <!-- App Switcher -->
+        <div class="app-switcher">
+            <button class="switcher-btn active" id="notepadSwitcher">
+                <i class="fas fa-edit"></i> <span class="text">Notepad</span>
+            </button>
+            <button class="switcher-btn" id="todoSwitcher">
+                <i class="fas fa-tasks"></i> <span class="text">Todo List</span>
+            </button>
+        </div>
+        
+        <div class="app-layout">
+            <!-- Notepad Panel -->
+            <div class="panel app-content" id="notepadPanel">
+                <div class="notepad-header">
+                    <h2><i class="fas fa-edit"></i> Notepad</h2>
+                    <div class="notepad-actions">
+                        <button class="btn btn-primary" id="saveNoteBtn" title="Save Note">
+                            <i class="fas fa-save"></i>
+                        </button>
+                        <button class="btn btn-secondary" id="newNoteBtn" title="New Note">
+                            <i class="fas fa-file-alt"></i>
+                        </button>
+                        <button class="btn btn-danger" id="clearNoteBtn" title="Clear Note">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <button class="btn view-saved-notes-btn" id="viewSavedNotesBtn" title="View Saved Notes">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    </div>
+                </div>
+                <input type="text" id="noteTitle" placeholder="Note Title">
+                <textarea id="noteContent" placeholder="Start typing your note here..."></textarea>
+            </div>
+            
+            <!-- Todo List Panel -->
+            <div class="panel app-content hidden" id="todoPanel">
+                <h2><i class="fas fa-tasks"></i> Todo List</h2>
+                <div class="todo-input">
+                    <input type="text" id="todoInput" placeholder="Add a new task...">
+                    <button id="addTodoBtn">Add</button>
+                </div>
+                <ul id="todoList"></ul>
+                
+                <h2 style="margin-top: 30px;"><i class="fas fa-calendar-alt"></i> Calendar</h2>
+                <div class="calendar-header">
+                    <div id="currentMonth">June 2023</div>
+                    <div class="calendar-nav">
+                        <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                        <button id="nextMonth" style="margin-left: 10px;"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="calendar-weekdays">
+                    <div>Sun</div>
+                    <div>Mon</div>
+                    <div>Tue</div>
+                    <div>Wed</div>
+                    <div>Thu</div>
+                    <div>Fri</div>
+                    <div>Sat</div>
+                </div>
+                <div class="calendar-days" id="calendarDays"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Saved Notes Page (Hidden by default) -->
+    <div class="saved-notes-page" id="savedNotesPage">
+        <div class="saved-notes-header">
+            <h2><i class="fas fa-archive"></i> Saved Notes</h2>
+            <button class="back-to-notepad" id="backToNotepad">
+                <i class="fas fa-arrow-left"></i> Back to Notepad
+            </button>
+        </div>
+        <div class="notes-list" id="notesList"></div>
+    </div>
+    
+    <!-- Bottom Menu -->
+    <div class="expand-button" id="expandButton">
+        <i class="fas fa-chevron-up"></i>
+    </div>
+    
+    <div class="bottom-menu">
+        <div class="menu-item" data-modal="bible">
+            <i class="fas fa-bible"></i>
+            <span>Bible</span>
+        </div>
+        <div class="menu-item" data-modal="dictionary">
+            <i class="fas fa-book"></i>
+            <span>Dictionary</span>
+        </div>
+        <div class="menu-item" data-modal="ai-search">
+            <i class="fas fa-robot"></i>
+            <span>AI Search</span>
+        </div>
+        <div class="menu-item" data-modal="youtube">
+            <i class="fab fa-youtube"></i>
+            <span>YouTube</span>
+        </div>
+        <div class="menu-item" id="exportPdfBtn">
+            <i class="fas fa-file-pdf"></i>
+            <span>Export PDF</span>
+        </div>
+    </div>
+    
+    <!-- Modal Container -->
+    <div class="modal-container collapsed" id="modalContainer">
+        <div class="modal" id="bibleModal">
+            <div class="modal-header">
+                <h3><i class="fas fa-bible"></i> Bible</h3>
+                <button class="close-modal" data-modal="bible">&times;</button>
+            </div>
+            <div class="modal-content">
+                <iframe src="https://skadigitalhub.github.io/NKJVBible/" title="Bible"></iframe>
+            </div>
+        </div>
+        
+        <div class="modal" id="dictionaryModal">
+            <div class="modal-header">
+                <h3><i class="fas fa-book"></i> Dictionary</h3>
+                <button class="close-modal" data-modal="dictionary">&times;</button>
+            </div>
+            <div class="modal-content">
+                <iframe src="https://www.dictionary.com/" title="Dictionary"></iframe>
+            </div>
+        </div>
+        
+        <div class="modal" id="aiSearchModal">
+            <div class="modal-header">
+                <h3><i class="fas fa-robot"></i> AI Search</h3>
+                <button class="close-modal" data-modal="ai-search">&times;</button>
+            </div>
+            <div class="modal-content">
+                <iframe src="https://www.perplexity.ai/" title="AI Search"></iframe>
+            </div>
+        </div>
+        
+        <div class="modal" id="youtubeModal">
+            <div class="modal-header">
+                <h3><i class="fab fa-youtube"></i> YouTube</h3>
+                <button class="close-modal" data-modal="youtube">&times;</button>
+            </div>
+            <div class="modal-content">
+                <iframe src="https://www.youtube.com
+                " title="YouTube"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export PDF Modal with Preview -->
+    <div class="export-modal" id="exportModal">
+        <div class="export-modal-content">
+            <h2><i class="fas fa-file-pdf"></i> Export Notes to PDF</h2>
+            
+            <div class="export-tabs">
+                <div class="export-tab active" data-tab="selection">1. Select Notes</div>
+                <div class="export-tab" data-tab="options">2. PDF Options</div>
+                <div class="export-tab" data-tab="preview">3. Preview & Edit</div>
+            </div>
+            
+            <!-- Selection Tab -->
+            <div class="export-panel active" id="selectionPanel">
+                <p>Select the notes you want to include in your PDF book:</p>
+                
+                <div class="note-selection" id="exportNoteSelection">
+                    <!-- Note checkboxes will be inserted here -->
+                </div>
+                
+                <div class="export-actions">
+                    <button class="btn btn-danger" id="cancelExportBtn">Cancel</button>
+                    <button class="btn btn-secondary" id="nextToOptionsBtn">Next: PDF Options <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+            
+            <!-- Options Tab -->
+            <div class="export-panel" id="optionsPanel">
+                <div class="export-options">
+                    <label for="pdfTitle">PDF Title:</label>
+                    <input type="text" id="pdfTitle" placeholder="My Custom Note Book" value="My Notes Collection">
+                    
+                    <label for="pdfSubtitle">PDF Subtitle (Optional):</label>
+                    <input type="text" id="pdfSubtitle" placeholder="A collection of my thoughts and ideas">
+                    
+                    <label for="pdfAuthor">Author Name:</label>
+                    <input type="text" id="pdfAuthor" placeholder="Your Name" value="Smart Notepad User">
+                    
+                    <label for="pdfFilename">File Name:</label>
+                    <input type="text" id="pdfFilename" placeholder="my-notes-book" value="notes-book">
+                    
+                    <label for="pdfFontSize">Font Size:</label>
+                    <select id="pdfFontSize">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                    
+                    <label for="pdfTheme">Theme:</label>
+                    <select id="pdfTheme">
+                        <option value="modern" selected>Modern</option>
+                        <option value="classic">Classic</option>
+                        <option value="minimal">Minimal</option>
+                    </select>
+                    
+                    <label for="pdfIntroduction">Introduction (Optional):</label>
+                    <textarea id="pdfIntroduction" placeholder="Add an introduction to your PDF book...">This is a collection of notes created using the Smart Notepad application. Each note represents a thought, idea, or important information that I wanted to preserve.</textarea>
+                </div>
+                
+                <div class="export-actions">
+                    <button class="btn btn-danger" id="backToSelectionBtn"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button class="btn btn-secondary" id="nextToPreviewBtn">Next: Preview & Edit <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+            
+            <!-- Preview Tab -->
+            <div class="export-panel" id="previewPanel">
+                <div class="pdf-preview-controls">
+                    <div>
+                        <label for="previewZoom">Zoom: </label>
+                        <select id="previewZoom">
+                            <option value="0.8">80%</option>
+                            <option value="0.9">90%</option>
+                            <option value="1" selected>100%</option>
+                            <option value="1.1">110%</option>
+                            <option value="1.2">120%</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button class="btn btn-warning" id="editPreviewBtn">
+                            <i class="fas fa-edit"></i> Enable Editing
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="pdf-preview-container">
+                    <div class="pdf-preview" id="pdfPreview">
+                        <!-- PDF preview will be generated here -->
+                    </div>
+                </div>
+                
+                <p><small><i class="fas fa-info-circle"></i> Click on any text in the preview to edit it directly. Changes will be reflected in the final PDF.</small></p>
+                
+                <div class="export-actions">
+                    <button class="btn btn-danger" id="backToOptionsBtn"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button class="btn btn-primary" id="generatePdfBtn"><i class="fas fa-file-pdf"></i> Generate PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    // Initialize variables
+    let notes = JSON.parse(localStorage.getItem('smartNotepadNotes')) || [];
+    let todos = JSON.parse(localStorage.getItem('smartNotepadTodos')) || [];
+    let currentDate = new Date();
+    let currentMonth = currentDate.getMonth();
+    let currentYear = currentDate.getFullYear();
+    let modalsExpanded = false;
+    let pdfEditingEnabled = false;
+    let selectedNotesForExport = [];
+    let pdfPreviewData = {
+        title: "My Notes Collection",
+        subtitle: "",
+        author: "Smart Notepad User",
+        introduction: "This is a collection of notes created using the Smart Notepad application.",
+        fontSize: "medium",
+        theme: "modern",
+        notes: []
+    };
+    
+    // DOM Elements
+    const noteTitleInput = document.getElementById('noteTitle');
+    const noteContentInput = document.getElementById('noteContent');
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+    const newNoteBtn = document.getElementById('newNoteBtn');
+    const clearNoteBtn = document.getElementById('clearNoteBtn');
+    const todoInput = document.getElementById('todoInput');
+    const addTodoBtn = document.getElementById('addTodoBtn');
+    const todoList = document.getElementById('todoList');
+    const currentMonthElement = document.getElementById('currentMonth');
+    const calendarDaysElement = document.getElementById('calendarDays');
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+    const notesListElement = document.getElementById('notesList');
+    const expandButton = document.getElementById('expandButton');
+    const modalContainer = document.getElementById('modalContainer');
+    const menuItems = document.querySelectorAll('.menu-item');
+    const closeModalButtons = document.querySelectorAll('.close-modal');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const exportModal = document.getElementById('exportModal');
+    const cancelExportBtn = document.getElementById('cancelExportBtn');
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+    const exportNoteSelection = document.getElementById('exportNoteSelection');
+    
+    // New UI Elements
+    const notepadSwitcher = document.getElementById('notepadSwitcher');
+    const todoSwitcher = document.getElementById('todoSwitcher');
+    const notepadPanel = document.getElementById('notepadPanel');
+    const todoPanel = document.getElementById('todoPanel');
+    const viewSavedNotesBtn = document.getElementById('viewSavedNotesBtn');
+    const savedNotesPage = document.getElementById('savedNotesPage');
+    const backToNotepad = document.getElementById('backToNotepad');
+    
+    // Tab elements
+    const exportTabs = document.querySelectorAll('.export-tab');
+    const selectionPanel = document.getElementById('selectionPanel');
+    const optionsPanel = document.getElementById('optionsPanel');
+    const previewPanel = document.getElementById('previewPanel');
+    const nextToOptionsBtn = document.getElementById('nextToOptionsBtn');
+    const nextToPreviewBtn = document.getElementById('nextToPreviewBtn');
+    const backToSelectionBtn = document.getElementById('backToSelectionBtn');
+    const backToOptionsBtn = document.getElementById('backToOptionsBtn');
+    const editPreviewBtn = document.getElementById('editPreviewBtn');
+    const previewZoom = document.getElementById('previewZoom');
+    
+    // PDF option elements
+    const pdfTitleInput = document.getElementById('pdfTitle');
+    const pdfSubtitleInput = document.getElementById('pdfSubtitle');
+    const pdfAuthorInput = document.getElementById('pdfAuthor');
+    const pdfFilenameInput = document.getElementById('pdfFilename');
+    const pdfFontSizeSelect = document.getElementById('pdfFontSize');
+    const pdfThemeSelect = document.getElementById('pdfTheme');
+    const pdfIntroductionInput = document.getElementById('pdfIntroduction');
+    const pdfPreviewElement = document.getElementById('pdfPreview');
+    
+    // Function to split note content into multiple pages
+    function splitNoteIntoPages(content, maxCharsPerPage = 2000) {
+        const pages = [];
+        
+        if (!content || content.trim() === '') {
+            return [''];
+        }
+        
+        // Split content by paragraphs
+        const paragraphs = content.split('\n').filter(p => p.trim() !== '');
+        
+        if (paragraphs.length === 0) {
+            return [content];
+        }
+        
+        let currentPage = '';
+        let currentPageLength = 0;
+        
+        paragraphs.forEach((paragraph, index) => {
+            const paragraphWithNewline = paragraph + (index < paragraphs.length - 1 ? '\n\n' : '');
+            const paragraphLength = paragraphWithNewline.length;
+            
+            // If adding this paragraph would exceed page limit
+            if (currentPageLength + paragraphLength > maxCharsPerPage) {
+                // Save current page if it has content
+                if (currentPageLength > 0) {
+                    pages.push(currentPage.trim());
+                    currentPage = '';
+                    currentPageLength = 0;
+                }
+                
+                // If a single paragraph is longer than maxCharsPerPage
+                if (paragraphLength > maxCharsPerPage) {
+                    // Split this very long paragraph
+                    const words = paragraph.split(' ');
+                    let currentParagraphChunk = '';
+                    
+                    words.forEach(word => {
+                        if ((currentParagraphChunk.length + word.length + 1) > maxCharsPerPage) {
+                            pages.push(currentParagraphChunk.trim());
+                            currentParagraphChunk = word;
+                        } else {
+                            currentParagraphChunk += (currentParagraphChunk ? ' ' : '') + word;
+                        }
+                    });
+                    
+                    if (currentParagraphChunk) {
+                        currentPage = currentParagraphChunk;
+                        currentPageLength = currentParagraphChunk.length;
+                    }
+                } else {
+                    currentPage = paragraphWithNewline;
+                    currentPageLength = paragraphLength;
+                }
+            } else {
+                currentPage += paragraphWithNewline;
+                currentPageLength += paragraphLength;
+            }
+        });
+        
+        // Don't forget the last page
+        if (currentPageLength > 0) {
+            pages.push(currentPage.trim());
+        }
+        
+        return pages;
+    }
+    
+    // Debug function to check notes in localStorage
+    function debugNotes() {
+        const storedNotes = localStorage.getItem('smartNotepadNotes');
+        console.log('=== DEBUG NOTES ===');
+        console.log('Raw localStorage data:', storedNotes);
+        
+        if (storedNotes) {
+            const parsedNotes = JSON.parse(storedNotes);
+            console.log('Parsed notes array length:', parsedNotes.length);
+            console.log('All notes:', parsedNotes);
+            
+            // Check for duplicate IDs
+            const noteIds = parsedNotes.map(note => note.id);
+            const uniqueIds = [...new Set(noteIds)];
+            console.log('Unique IDs:', uniqueIds.length, 'Total notes:', noteIds.length);
+            
+            if (uniqueIds.length !== noteIds.length) {
+                console.warn('WARNING: Duplicate note IDs found!');
+            }
+        }
+        console.log('Current notes variable length:', notes.length);
+        console.log('=== END DEBUG ===');
+    }
+    
+    // Initialize the app
+    function initApp() {
+        renderTodos();
+        renderCalendar();
+        renderSavedNotes();
+        
+        // Load last edited note if exists
+        if (notes.length > 0) {
+            const lastNote = notes[notes.length - 1];
+            noteTitleInput.value = lastNote.title;
+            noteContentInput.value = lastNote.content;
+        }
+        
+        // Set today's date in calendar
+        const today = new Date();
+        if (today.getMonth() === currentMonth && today.getFullYear() === currentYear) {
+            highlightToday();
+        }
+        
+        // Add Clear All button to saved notes page
+        addClearAllButton();
+    }
+    
+    // Add Clear All button to saved notes page
+    function addClearAllButton() {
+        const header = document.querySelector('.saved-notes-header');
+        if (!header) return;
+        
+        const clearButton = document.createElement('button');
+        clearButton.className = 'btn btn-danger';
+        clearButton.id = 'clearAllNotesBtn';
+        clearButton.innerHTML = '<i class="fas fa-trash"></i> Clear All';
+        clearButton.style.marginLeft = '10px';
+        clearButton.onclick = function() {
+            if (confirm('Are you sure you want to delete ALL notes? This cannot be undone!')) {
+                notes = [];
+                localStorage.removeItem('smartNotepadNotes');
+                renderSavedNotes();
+                alert('All notes have been deleted.');
+            }
+        };
+        
+        // Insert after the back button
+        const backButton = document.getElementById('backToNotepad');
+        backButton.parentNode.insertBefore(clearButton, backButton.nextSibling);
+    }
+    
+    // App Switcher Functionality
+    notepadSwitcher.addEventListener('click', function() {
+        switchToNotepad();
+    });
+    
+    todoSwitcher.addEventListener('click', function() {
+        switchToTodo();
+    });
+    
+    function switchToNotepad() {
+        notepadSwitcher.classList.add('active');
+        todoSwitcher.classList.remove('active');
+        notepadPanel.classList.remove('hidden');
+        todoPanel.classList.add('hidden');
+    }
+    
+    function switchToTodo() {
+        todoSwitcher.classList.add('active');
+        notepadSwitcher.classList.remove('active');
+        todoPanel.classList.remove('hidden');
+        notepadPanel.classList.add('hidden');
+    }
+    
+    // Saved Notes Page Functionality
+    viewSavedNotesBtn.addEventListener('click', function() {
+        showSavedNotesPage();
+    });
+    
+    backToNotepad.addEventListener('click', function() {
+        hideSavedNotesPage();
+    });
+    
+    function showSavedNotesPage() {
+        savedNotesPage.classList.add('active');
+        
+        // Debug: Check what's in localStorage
+        debugNotes();
+        
+        // RELOAD notes from localStorage to ensure we have latest data
+        notes = JSON.parse(localStorage.getItem('smartNotepadNotes')) || [];
+        console.log('Total notes loaded for display:', notes.length);
+        
+        // Refresh notes list
+        renderSavedNotes();
+    }
+    
+    function hideSavedNotesPage() {
+        savedNotesPage.classList.remove('active');
+    }
+    
+    // Notepad Functions
+    saveNoteBtn.addEventListener('click', saveNote);
+    newNoteBtn.addEventListener('click', newNote);
+    clearNoteBtn.addEventListener('click', clearNote);
+    
+    function saveNote() {
+        const title = noteTitleInput.value.trim();
+        const content = noteContentInput.value.trim();
+        
+        if (!title && !content) {
+            alert('Please add a title or content to save the note.');
+            return;
+        }
+        
+        // Create a more unique ID to prevent duplicates
+        const noteId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        
+        const note = {
+            id: noteId,
+            title: title || 'Untitled Note',
+            content: content,
+            date: new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit' // Add seconds for more precision
+            })
+        };
+        
+        // Add the new note to the beginning of the array (so newest shows first)
+        notes.unshift(note);
+        
+        // Save to localStorage
+        localStorage.setItem('smartNotepadNotes', JSON.stringify(notes));
+        
+        // Refresh the saved notes display if the saved notes page is open
+        if (savedNotesPage.classList.contains('active')) {
+            renderSavedNotes();
+        }
+        
+        // Clear inputs
+        noteTitleInput.value = '';
+        noteContentInput.value = '';
+        
+        alert('Note saved successfully!');
+    }
+    
+    function newNote() {
+        if (noteTitleInput.value.trim() || noteContentInput.value.trim()) {
+            if (confirm('Creating a new note will clear current content. Save current note first?')) {
+                saveNote();
+            }
+        }
+        
+        noteTitleInput.value = '';
+        noteContentInput.value = '';
+        noteTitleInput.focus();
+    }
+    
+    function clearNote() {
+        if (noteTitleInput.value.trim() || noteContentInput.value.trim()) {
+            if (confirm('Are you sure you want to clear the note?')) {
+                noteTitleInput.value = '';
+                noteContentInput.value = '';
+            }
+        }
+    }
+    
+    function renderSavedNotes() {
+        console.log('Rendering notes. Total in array:', notes.length);
+        
+        if (notes.length === 0) {
+            notesListElement.innerHTML = '<p style="text-align: center; color: #7f8c8d; grid-column: 1 / -1; padding: 40px;">No saved notes yet. Create and save your first note!</p>';
+            return;
+        }
+        
+        // Show newest notes first (already added to beginning with unshift in saveNote)
+        // So we don't need to reverse, but let's display all of them
+        notesListElement.innerHTML = notes.map((note, index) => `
+            <div class="note-card">
+                <h3>${note.title}</h3>
+                <div class="note-date">${note.date}</div>
+                <div class="note-preview">${note.content.length > 150 ? note.content.substring(0, 150) + '...' : note.content}</div>
+                <div class="note-card-actions">
+                    <button class="btn btn-primary" onclick="loadNote('${note.id}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteNote('${note.id}')">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        
+        console.log('Displayed', notes.length, 'notes on the page');
+    }
+    
+    function loadNote(id) {
+        const note = notes.find(note => note.id == id);
+        if (note) {
+            noteTitleInput.value = note.title;
+            noteContentInput.value = note.content;
+            // Hide saved notes page and show notepad
+            hideSavedNotesPage();
+            switchToNotepad();
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+    
+    function deleteNote(id) {
+        if (confirm('Are you sure you want to delete this note?')) {
+            notes = notes.filter(note => note.id != id);
+            localStorage.setItem('smartNotepadNotes', JSON.stringify(notes));
+            renderSavedNotes();
+        }
+    }
+    
+    // Todo List Functions
+    addTodoBtn.addEventListener('click', addTodo);
+    todoInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addTodo();
+        }
+    });
+    
+    function addTodo() {
+        const text = todoInput.value.trim();
+        if (text === '') return;
+        
+        const todo = {
+            id: Date.now(),
+            text: text,
+            completed: false
+        };
+        
+        todos.push(todo);
+        localStorage.setItem('smartNotepadTodos', JSON.stringify(todos));
+        renderTodos();
+        
+        todoInput.value = '';
+        todoInput.focus();
+    }
+    
+    function renderTodos() {
+        if (todos.length === 0) {
+            todoList.innerHTML = '<li style="text-align: center; color: #7f8c8d; padding: 20px;">No tasks yet. Add a task to get started!</li>';
+            return;
+        }
+        
+        todoList.innerHTML = todos.map(todo => `
+            <li class="todo-item ${todo.completed ? 'completed' : ''}">
+                <span class="todo-text">${todo.text}</span>
+                <div class="todo-actions">
+                    <button onclick="toggleTodo(${todo.id})">
+                        <i class="fas fa-${todo.completed ? 'undo' : 'check'}"></i>
+                    </button>
+                    <button onclick="deleteTodo(${todo.id})">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </li>
+        `).join('');
+    }
+    
+    function toggleTodo(id) {
+        todos = todos.map(todo => {
+            if (todo.id === id) {
+                return { ...todo, completed: !todo.completed };
+            }
+            return todo;
+        });
+        
+        localStorage.setItem('smartNotepadTodos', JSON.stringify(todos));
+        renderTodos();
+    }
+    
+    function deleteTodo(id) {
+        todos = todos.filter(todo => todo.id !== id);
+        localStorage.setItem('smartNotepadTodos', JSON.stringify(todos));
+        renderTodos();
+    }
+    
+    // Calendar Functions
+    prevMonthBtn.addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        renderCalendar();
+    });
+    
+    nextMonthBtn.addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    });
+    
+    function renderCalendar() {
+        // Update month display
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        currentMonthElement.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+        
+        // Get first day of the month and total days
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const totalDays = lastDay.getDate();
+        const firstDayIndex = firstDay.getDay();
+        
+        // Clear previous calendar days
+        calendarDaysElement.innerHTML = '';
+        
+        // Add previous month's days
+        const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+        for (let i = firstDayIndex; i > 0; i--) {
+            const dayElement = document.createElement('div');
+            dayElement.classList.add('other-month');
+            dayElement.textContent = prevMonthLastDay - i + 1;
+            calendarDaysElement.appendChild(dayElement);
+        }
+        
+        // Add current month's days
+        const today = new Date();
+        for (let i = 1; i <= totalDays; i++) {
+            const dayElement = document.createElement('div');
+            dayElement.textContent = i;
+            
+            // Highlight today
+            if (i === today.getDate() && 
+                currentMonth === today.getMonth() && 
+                currentYear === today.getFullYear()) {
+                dayElement.classList.add('today');
+            }
+            
+            dayElement.addEventListener('click', () => {
+                // Remove selected class from all days
+                document.querySelectorAll('.calendar-days div').forEach(day => {
+                    day.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked day
+                dayElement.classList.add('selected');
+                
+                // Add a todo for the selected date
+                const todoText = prompt(`Add a todo for ${monthNames[currentMonth]} ${i}, ${currentYear}:`);
+                if (todoText) {
+                    const todo = {
+                        id: Date.now(),
+                        text: `${todoText} (${monthNames[currentMonth]} ${i})`,
+                        completed: false
+                    };
+                    
+                    todos.push(todo);
+                    localStorage.setItem('smartNotepadTodos', JSON.stringify(todos));
+                    renderTodos();
+                }
+            });
+            
+            calendarDaysElement.appendChild(dayElement);
+        }
+        
+        // Add next month's days
+        const totalCells = 42; // 6 weeks
+        const nextMonthDays = totalCells - (firstDayIndex + totalDays);
+        for (let i = 1; i <= nextMonthDays; i++) {
+            const dayElement = document.createElement('div');
+            dayElement.classList.add('other-month');
+            dayElement.textContent = i;
+            calendarDaysElement.appendChild(dayElement);
+        }
+    }
+    
+    function highlightToday() {
+        const today = new Date();
+        const dayElements = document.querySelectorAll('.calendar-days div');
+        
+        dayElements.forEach((day, index) => {
+            const dayNumber = parseInt(day.textContent);
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const firstDayIndex = firstDay.getDay();
+            
+            // Calculate if this is today
+            if (dayNumber === today.getDate() && 
+                !day.classList.contains('other-month') &&
+                index >= firstDayIndex) {
+                day.classList.add('today');
+            }
+        });
+    }
+    
+    // Bottom Menu and Modal Functions
+    expandButton.addEventListener('click', toggleModals);
+    
+    function toggleModals() {
+        modalsExpanded = !modalsExpanded;
+        
+        if (modalsExpanded) {
+            modalContainer.classList.remove('collapsed');
+            expandButton.innerHTML = '<i class="fas fa-chevron-down"></i>';
+            expandButton.style.backgroundColor = '#e74c3c';
+        } else {
+            modalContainer.classList.add('collapsed');
+            expandButton.innerHTML = '<i class="fas fa-chevron-up"></i>';
+            expandButton.style.backgroundColor = '#3498db';
+            
+            // Close all modals
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+    }
+    
+    // Menu item click handlers
+    menuItems.forEach(item => {
+        if (item.id !== 'exportPdfBtn') {
+            item.addEventListener('click', function() {
+                const modalId = this.getAttribute('data-modal');
+                openModal(modalId);
+            });
+        }
+    });
+    
+    // Close modal buttons
+    closeModalButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const modalId = this.getAttribute('data-modal');
+            closeModal(modalId);
+        });
+    });
+    
+    function openModal(modalId) {
+        // Expand modals if collapsed
+        if (!modalsExpanded) {
+            toggleModals();
+        }
+        
+        // Show the selected modal
+        const modal = document.getElementById(`${modalId}Modal`);
+        if (modal) {
+            // Hide all modals first
+            document.querySelectorAll('.modal').forEach(m => {
+                m.style.display = 'none';
+            });
+            
+            // Show the selected modal
+            modal.style.display = 'flex';
+        }
+    }
+    
+    function closeModal(modalId) {
+        const modal = document.getElementById(`${modalId}Modal`);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Export PDF Functions with Preview and Editing
+    exportPdfBtn.addEventListener('click', openExportModal);
+    cancelExportBtn.addEventListener('click', closeExportModal);
+    generatePdfBtn.addEventListener('click', generatePdf);
+    
+    // Tab navigation
+    exportTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            switchTab(tabId);
+        });
+    });
+    
+    nextToOptionsBtn.addEventListener('click', function() {
+        // Get selected notes
+        const selectedCheckboxes = exportNoteSelection.querySelectorAll('input[type="checkbox"]:checked');
+        selectedNotesForExport = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+        
+        if (selectedNotesForExport.length === 0) {
+            alert('Please select at least one note to export.');
+            return;
+        }
+        
+        // Update pdfPreviewData with selected notes
+        pdfPreviewData.notes = notes.filter(note => selectedNotesForExport.includes(parseInt(note.id)));
+        
+        switchTab('options');
+    });
+    
+    nextToPreviewBtn.addEventListener('click', function() {
+        // Update pdfPreviewData with form values
+        updatePdfPreviewDataFromForm();
+        
+        // Generate preview
+        generatePdfPreview();
+        
+        switchTab('preview');
+    });
+    
+    backToSelectionBtn.addEventListener('click', function() {
+        switchTab('selection');
+    });
+    
+    backToOptionsBtn.addEventListener('click', function() {
+        switchTab('options');
+    });
+    
+    editPreviewBtn.addEventListener('click', function() {
+        pdfEditingEnabled = !pdfEditingEnabled;
+        
+        if (pdfEditingEnabled) {
+            this.innerHTML = '<i class="fas fa-lock"></i> Disable Editing';
+            this.classList.remove('btn-warning');
+            this.classList.add('btn-danger');
+            enablePdfEditing();
+        } else {
+            this.innerHTML = '<i class="fas fa-edit"></i> Enable Editing';
+            this.classList.remove('btn-danger');
+            this.classList.add('btn-warning');
+            disablePdfEditing();
+        }
+    });
+    
+    previewZoom.addEventListener('change', function() {
+        const zoomLevel = parseFloat(this.value);
+        pdfPreviewElement.style.transform = `scale(${zoomLevel})`;
+        pdfPreviewElement.style.transformOrigin = 'top left';
+    });
+    
+    function switchTab(tabId) {
+        // Update tabs
+        exportTabs.forEach(tab => {
+            if (tab.getAttribute('data-tab') === tabId) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+        
+        // Update panels
+        selectionPanel.classList.remove('active');
+        optionsPanel.classList.remove('active');
+        previewPanel.classList.remove('active');
+        
+        if (tabId === 'selection') {
+            selectionPanel.classList.add('active');
+        } else if (tabId === 'options') {
+            optionsPanel.classList.add('active');
+        } else if (tabId === 'preview') {
+            previewPanel.classList.add('active');
+        }
+    }
+    
+    function openExportModal() {
+        // Reset to first tab
+        switchTab('selection');
+        
+        // Populate note selection
+        exportNoteSelection.innerHTML = '';
+        
+        if (notes.length === 0) {
+            exportNoteSelection.innerHTML = '<p style="text-align: center; color: #7f8c8d;">No notes to export.</p>';
+            nextToOptionsBtn.disabled = true;
+        } else {
+            // Show ALL notes for selection
+            notes.forEach((note, index) => {
+                const checkbox = document.createElement('div');
+                checkbox.className = 'note-checkbox';
+                checkbox.innerHTML = `
+                    <label style="display: flex; align-items: flex-start; cursor: pointer;">
+                        <input type="checkbox" value="${note.id}" checked style="margin-right: 10px; margin-top: 3px;">
+                        <div>
+                            <strong>${note.title}</strong><br>
+                            <small style="color: #7f8c8d;">${note.date}</small>
+                        </div>
+                    </label>
+                `;
+                exportNoteSelection.appendChild(checkbox);
+            });
+            
+            // Select all notes by default
+            selectedNotesForExport = notes.map(note => parseInt(note.id));
+            
+            nextToOptionsBtn.disabled = false;
+        }
+        
+        // Reset editing mode
+        pdfEditingEnabled = false;
+        editPreviewBtn.innerHTML = '<i class="fas fa-edit"></i> Enable Editing';
+        editPreviewBtn.classList.remove('btn-danger');
+        editPreviewBtn.classList.add('btn-warning');
+        
+        // Set default PDF values
+        pdfTitleInput.value = 'My Notes Collection';
+        pdfSubtitleInput.value = 'A collection of my thoughts and ideas';
+        pdfAuthorInput.value = 'Smart Notepad User';
+        pdfFilenameInput.value = `notes-${new Date().toISOString().slice(0, 10)}`;
+        pdfIntroductionInput.value = 'This is a collection of notes created using the Smart Notepad application. Each note represents a thought, idea, or important information that I wanted to preserve.';
+        
+        // Show the modal
+        exportModal.style.display = 'flex';
+    }
+    
+    function closeExportModal() {
+        exportModal.style.display = 'none';
+    }
+    
+    function updatePdfPreviewDataFromForm() {
+        pdfPreviewData.title = pdfTitleInput.value.trim() || 'My Notes Collection';
+        pdfPreviewData.subtitle = pdfSubtitleInput.value.trim();
+        pdfPreviewData.author = pdfAuthorInput.value.trim() || 'Smart Notepad User';
+        pdfPreviewData.introduction = pdfIntroductionInput.value.trim() || 'This is a collection of notes created using the Smart Notepad application.';
+        pdfPreviewData.fontSize = pdfFontSizeSelect.value;
+        pdfPreviewData.theme = pdfThemeSelect.value;
+    }
+    
+    function generatePdfPreview() {
+        // Clear previous preview
+        pdfPreviewElement.innerHTML = '';
+        
+        // Apply theme styling
+        applyThemeStyles();
+        
+        // Create title page
+        const titlePage = document.createElement('div');
+        titlePage.className = 'pdf-page pdf-title-page';
+        
+        const titleElement = document.createElement('div');
+        titleElement.className = 'pdf-title pdf-editable';
+        titleElement.setAttribute('data-field', 'title');
+        titleElement.textContent = pdfPreviewData.title;
+        
+        const subtitleElement = document.createElement('div');
+        subtitleElement.className = 'pdf-subtitle pdf-editable';
+        subtitleElement.setAttribute('data-field', 'subtitle');
+        subtitleElement.textContent = pdfPreviewData.subtitle || 'A collection of notes';
+        
+        const generatedDate = document.createElement('div');
+        generatedDate.className = 'pdf-generated-date';
+        generatedDate.textContent = `Generated on ${new Date().toLocaleDateString()} by ${pdfPreviewData.author}`;
+        
+        titlePage.appendChild(titleElement);
+        if (pdfPreviewData.subtitle) {
+            titlePage.appendChild(subtitleElement);
+        }
+        titlePage.appendChild(generatedDate);
+        
+        // Add page number
+        const pageNumber1 = document.createElement('div');
+        pageNumber1.className = 'pdf-page-number';
+        pageNumber1.textContent = '1';
+        titlePage.appendChild(pageNumber1);
+        
+        pdfPreviewElement.appendChild(titlePage);
+        
+        // Create table of contents page
+        const tocPage = document.createElement('div');
+        tocPage.className = 'pdf-page';
+        
+        const tocTitle = document.createElement('div');
+        tocTitle.className = 'pdf-section-title';
+        tocTitle.textContent = 'Table of Contents';
+        
+        const tocContent = document.createElement('div');
+        tocContent.className = 'pdf-note-content';
+        
+        pdfPreviewData.notes.forEach((note, index) => {
+            const tocItem = document.createElement('div');
+            tocItem.className = 'pdf-toc-item';
+            tocItem.innerHTML = `${index + 1}. ${note.title} <span style="float: right;">${index + 3}</span>`;
+            tocContent.appendChild(tocItem);
+        });
+        
+        tocPage.appendChild(tocTitle);
+        tocPage.appendChild(tocContent);
+        
+        // Add page number
+        const pageNumber2 = document.createElement('div');
+        pageNumber2.className = 'pdf-page-number';
+        pageNumber2.textContent = '2';
+        tocPage.appendChild(pageNumber2);
+        
+        pdfPreviewElement.appendChild(tocPage);
+        
+        // Create introduction page if there's an introduction
+        if (pdfPreviewData.introduction) {
+            const introPage = document.createElement('div');
+            introPage.className = 'pdf-page';
+            
+            const introTitle = document.createElement('div');
+            introTitle.className = 'pdf-section-title';
+            introTitle.textContent = 'Introduction';
+            
+            const introContent = document.createElement('div');
+            introContent.className = 'pdf-note-content pdf-editable';
+            introContent.setAttribute('data-field', 'introduction');
+            introContent.textContent = pdfPreviewData.introduction;
+            
+            introPage.appendChild(introTitle);
+            introPage.appendChild(introContent);
+            
+            // Add page number
+            const pageNumber3 = document.createElement('div');
+            pageNumber3.className = 'pdf-page-number';
+            pageNumber3.textContent = '3';
+            introPage.appendChild(pageNumber3);
+            
+            pdfPreviewElement.appendChild(introPage);
+        }
+        
+        // Create note pages with multi-page support
+        let pageCounter = pdfPreviewData.introduction ? 6 : 5; // Start page number
+        
+        pdfPreviewData.notes.forEach((note, index) => {
+            // Split note content into pages if needed
+            const noteContentPages = splitNoteIntoPages(note.content);
+            
+            // Create a page for each chunk of note content
+            noteContentPages.forEach((contentChunk, chunkIndex) => {
+                const notePage = document.createElement('div');
+                notePage.className = 'pdf-page';
+                notePage.setAttribute('data-page-number', pageCounter);
+                notePage.setAttribute('data-note-id', note.id);
+                notePage.setAttribute('data-chunk-index', chunkIndex);
+                
+                // Only show title on first page of multi-page note
+                if (chunkIndex === 0) {
+                    const noteTitle = document.createElement('div');
+                    noteTitle.className = 'pdf-note-title pdf-editable';
+                    noteTitle.setAttribute('data-field', `note-${note.id}-title`);
+                    noteTitle.setAttribute('data-note-id', note.id);
+                    noteTitle.textContent = `${index + 1}. ${note.title}`;
+                    notePage.appendChild(noteTitle);
+                    
+                    const noteDate = document.createElement('div');
+                    noteDate.className = 'pdf-note-date pdf-editable';
+                    noteDate.setAttribute('data-field', `note-${note.id}-date`);
+                    noteDate.setAttribute('data-note-id', note.id);
+                    noteDate.textContent = note.date;
+                    notePage.appendChild(noteDate);
+                    
+                    // Separator
+                    const separator = document.createElement('hr');
+                    separator.style.border = 'none';
+                    separator.style.borderTop = '1px solid #eee';
+                    separator.style.margin = '10px 0 20px 0';
+                    notePage.appendChild(separator);
+                } else {
+                    // For subsequent pages, show "Continued..." header
+                    const continuedHeader = document.createElement('div');
+                    continuedHeader.className = 'pdf-note-title';
+                    continuedHeader.textContent = `${index + 1}. ${note.title} (Continued...)`;
+                    continuedHeader.style.color = '#666';
+                    continuedHeader.style.fontSize = '16px';
+                    continuedHeader.style.marginBottom = '5px';
+                    notePage.appendChild(continuedHeader);
+                    
+                    // Separator
+                    const separator = document.createElement('hr');
+                    separator.style.border = 'none';
+                    separator.style.borderTop = '1px solid #eee';
+                    separator.style.margin = '10px 0 20px 0';
+                    notePage.appendChild(separator);
+                }
+                
+                // Add content chunk
+                const noteContent = document.createElement('div');
+                noteContent.className = 'pdf-note-content pdf-editable';
+                noteContent.setAttribute('data-field', `note-${note.id}-content-chunk-${chunkIndex}`);
+                noteContent.setAttribute('data-note-id', note.id);
+                noteContent.textContent = contentChunk;
+                notePage.appendChild(noteContent);
+                
+                // Add page number
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'pdf-page-number pdf-editable';
+                pageNumber.setAttribute('data-field', `page-${pageCounter}-number`);
+                pageNumber.textContent = pageCounter.toString();
+                notePage.appendChild(pageNumber);
+                
+                // Add timestamp (editable)
+                const timestamp = document.createElement('div');
+                timestamp.className = 'pdf-timestamp pdf-editable';
+                timestamp.setAttribute('data-field', `timestamp-${pageCounter}`);
+                timestamp.style.position = 'absolute';
+                timestamp.style.bottom = '10px';
+                timestamp.style.left = '20px';
+                timestamp.style.fontSize = '10px';
+                timestamp.style.color = '#999';
+                timestamp.textContent = `Page ${pageCounter} - ${new Date().toLocaleDateString()}`;
+                notePage.appendChild(timestamp);
+                
+                pdfPreviewElement.appendChild(notePage);
+                pageCounter++;
+            });
+        });
+        
+        // Apply font size
+        applyFontSize();
+    }
+    
+    function applyThemeStyles() {
+        // Reset styles
+        pdfPreviewElement.style.backgroundColor = 'white';
+        pdfPreviewElement.style.color = '#333';
+        
+        if (pdfPreviewData.theme === 'classic') {
+            pdfPreviewElement.style.backgroundColor = '#fefefe';
+            pdfPreviewElement.style.color = '#222';
+        } else if (pdfPreviewData.theme === 'minimal') {
+            pdfPreviewElement.style.backgroundColor = '#ffffff';
+            pdfPreviewElement.style.color = '#444';
+        }
+    }
+    
+    function applyFontSize() {
+        const fontSizeMap = {
+            'small': '12px',
+            'medium': '14px',
+            'large': '16px'
+        };
+        
+        const baseSize = fontSizeMap[pdfPreviewData.fontSize] || '14px';
+        
+        // Apply to all text elements in the preview
+        pdfPreviewElement.querySelectorAll('.pdf-note-content').forEach(el => {
+            el.style.fontSize = baseSize;
+        });
+        
+        pdfPreviewElement.querySelectorAll('.pdf-title').forEach(el => {
+            el.style.fontSize = `calc(${baseSize} * 2)`;
+        });
+        
+        pdfPreviewElement.querySelectorAll('.pdf-subtitle').forEach(el => {
+            el.style.fontSize = `calc(${baseSize} * 1.2)`;
+        });
+        
+        pdfPreviewElement.querySelectorAll('.pdf-section-title').forEach(el => {
+            el.style.fontSize = `calc(${baseSize} * 1.4)`;
+        });
+        
+        pdfPreviewElement.querySelectorAll('.pdf-note-title').forEach(el => {
+            el.style.fontSize = `calc(${baseSize} * 1.3)`;
+        });
+    }
+    
+    function enablePdfEditing() {
+        // Add editable class to all editable elements
+        const editableElements = pdfPreviewElement.querySelectorAll('.pdf-editable');
+        
+        editableElements.forEach(element => {
+            element.contentEditable = true;
+            element.style.border = '1px dashed #3498db';
+            element.style.padding = '5px';
+            element.style.borderRadius = '4px';
+            element.style.minHeight = '20px';
+            
+            // Save changes when focus is lost
+            element.addEventListener('blur', function() {
+                saveEditableChange(this);
+            });
+            
+            // Allow Enter key to add new line
+            element.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.execCommand('insertLineBreak');
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+    
+    function disablePdfEditing() {
+        const editableElements = pdfPreviewElement.querySelectorAll('.pdf-editable');
+        
+        editableElements.forEach(element => {
+            element.contentEditable = false;
+            element.style.border = 'none';
+            element.style.padding = '0';
+        });
+    }
+    
+    function saveEditableChange(element) {
+        const field = element.getAttribute('data-field');
+        const noteId = element.getAttribute('data-note-id');
+        
+        if (field === 'title') {
+            pdfPreviewData.title = element.textContent;
+            pdfTitleInput.value = element.textContent;
+        } else if (field === 'subtitle') {
+            pdfPreviewData.subtitle = element.textContent;
+            pdfSubtitleInput.value = element.textContent;
+        } else if (field === 'introduction') {
+            pdfPreviewData.introduction = element.textContent;
+            pdfIntroductionInput.value = element.textContent;
+        } else if (field.startsWith('note-') && field.endsWith('-title')) {
+            // Update note title
+            const note = pdfPreviewData.notes.find(n => n.id == noteId);
+            if (note) {
+                note.title = element.textContent.replace(/^\d+\.\s/, '');
+                
+                // Update the original notes array too
+                const originalNote = notes.find(n => n.id == noteId);
+                if (originalNote) {
+                    originalNote.title = note.title;
+                    localStorage.setItem('smartNotepadNotes', JSON.stringify(notes));
+                }
+            }
+        } else if (field.startsWith('note-') && field.endsWith('-date')) {
+            // Update note date
+            const note = pdfPreviewData.notes.find(n => n.id == noteId);
+            if (note) {
+                note.date = element.textContent;
+                
+                // Update the original notes array too
+                const originalNote = notes.find(n => n.id == noteId);
+                if (originalNote) {
+                    originalNote.date = note.date;
+                    localStorage.setItem('smartNotepadNotes', JSON.stringify(notes));
+                }
+            }
+        } else if (field.startsWith('note-') && field.includes('-content-chunk-')) {
+            // Update note content chunk
+            const note = pdfPreviewData.notes.find(n => n.id == noteId);
+            if (note) {
+                // For multi-page notes, we need to rebuild the full content
+                const chunkIndex = parseInt(field.match(/-content-chunk-(\d+)/)[1]);
+                const notePages = pdfPreviewElement.querySelectorAll(`[data-note-id="${noteId}"] .pdf-note-content`);
+                
+                // Reconstruct full content from all chunks
+                let fullContent = '';
+                notePages.forEach((page, index) => {
+                    if (page.textContent.trim()) {
+                        fullContent += page.textContent + (index < notePages.length - 1 ? '\n\n' : '');
+                    }
+                });
+                
+                note.content = fullContent.trim();
+                
+                // Update the original notes array too
+                const originalNote = notes.find(n => n.id == noteId);
+                if (originalNote) {
+                    originalNote.content = note.content;
+                    localStorage.setItem('smartNotepadNotes', JSON.stringify(notes));
+                }
+            }
+        }
+    }
+    
+    function generatePdf() {
+        const filename = pdfFilenameInput.value.trim() || `notes-${new Date().toISOString().slice(0, 10)}`;
+        
+        // Update data from form one more time
+        updatePdfPreviewDataFromForm();
+        
+        // Create PDF using jsPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Set PDF properties
+        doc.setProperties({
+            title: pdfPreviewData.title,
+            subject: 'Notes Collection',
+            author: pdfPreviewData.author
+        });
+        
+        // Set font size based on selection
+        let fontSize = 12;
+        if (pdfPreviewData.fontSize === 'small') fontSize = 10;
+        if (pdfPreviewData.fontSize === 'large') fontSize = 14;
+        
+        // Add title page
+        doc.setFontSize(fontSize * 2);
+        doc.setTextColor(40, 40, 40);
+        doc.text(pdfPreviewData.title, 105, 50, { align: 'center' });
+        
+        if (pdfPreviewData.subtitle) {
+            doc.setFontSize(fontSize * 1.2);
+            doc.setTextColor(100, 100, 100);
+            doc.text(pdfPreviewData.subtitle, 105, 70, { align: 'center' });
+        }
+        
+        doc.setFontSize(fontSize);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Generated on ${new Date().toLocaleDateString()} by ${pdfPreviewData.author}`, 105, 90, { align: 'center' });
+        
+        // Add a line separator
+        doc.setDrawColor(52, 152, 219);
+        doc.setLineWidth(0.5);
+        doc.line(20, 100, 190, 100);
+        
+        // Add table of contents
+        doc.addPage();
+        doc.setFontSize(fontSize * 1.4);
+        doc.setTextColor(52, 152, 219);
+        doc.text('Table of Contents', 20, 20);
+        
+        doc.setFontSize(fontSize);
+        doc.setTextColor(80, 80, 80);
+        
+        let tocY = 30;
+        let pageCounter = pdfPreviewData.introduction ? 4 : 3;
+        
+        // Calculate page numbers for table of contents
+        let notePageNumbers = [];
+        let currentNotePage = pageCounter;
+        
+        pdfPreviewData.notes.forEach((note, index) => {
+            const notePages = splitNoteIntoPages(note.content).length;
+            notePageNumbers.push(currentNotePage);
+            currentNotePage += notePages;
+        });
+        
+        // Add table of contents items
+        pdfPreviewData.notes.forEach((note, index) => {
+            if (tocY > 270) {
+                doc.addPage();
+                tocY = 20;
+            }
+            
+            doc.text(`${index + 1}. ${note.title}`, 25, tocY);
+            doc.text(`................... ${notePageNumbers[index]}`, 180, tocY, { align: 'right' });
+            tocY += 8;
+        });
+        
+        // Add introduction page if there's an introduction
+        if (pdfPreviewData.introduction) {
+            doc.addPage();
+            
+            // Introduction title
+            doc.setFontSize(fontSize * 1.4);
+            doc.setTextColor(52, 152, 219);
+            doc.text('Introduction', 20, 30);
+            
+            // Introduction content
+            doc.setFontSize(fontSize);
+            doc.setTextColor(60, 60, 60);
+            
+            const introLines = doc.splitTextToSize(pdfPreviewData.introduction, 170);
+            doc.text(introLines, 20, 50);
+            
+            // Page number
+            doc.setFontSize(fontSize * 0.8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('3', 105, 285, { align: 'center' });
+        }
+        
+        // Add notes content with multi-page support
+        currentNotePage = pageCounter;
+        
+        pdfPreviewData.notes.forEach((note, index) => {
+            // Split note into pages
+            const notePages = splitNoteIntoPages(note.content);
+            
+            notePages.forEach((contentChunk, chunkIndex) => {
+                doc.addPage();
+                
+                // Note title (only on first page of multi-page note)
+                if (chunkIndex === 0) {
+                    doc.setFontSize(fontSize * 1.3);
+                    doc.setTextColor(40, 40, 40);
+                    doc.text(`${index + 1}. ${note.title}`, 20, 30);
+                    
+                    // Note date
+                    doc.setFontSize(fontSize * 0.9);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(note.date, 20, 40);
+                    
+                    // Separator
+                    doc.setDrawColor(200, 200, 200);
+                    doc.setLineWidth(0.3);
+                    doc.line(20, 45, 190, 45);
+                    
+                    doc.text(contentChunk, 20, 60);
+                } else {
+                    // Continued header for subsequent pages
+                    doc.setFontSize(fontSize * 1.1);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`${index + 1}. ${note.title} (Continued...)`, 20, 30);
+                    
+                    // Separator
+                    doc.setDrawColor(200, 200, 200);
+                    doc.setLineWidth(0.3);
+                    doc.line(20, 35, 190, 35);
+                    
+                    doc.setFontSize(fontSize);
+                    doc.setTextColor(60, 60, 60);
+                    doc.text(contentChunk, 20, 50);
+                }
+                
+                // Page number
+                doc.setFontSize(fontSize * 0.8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(currentNotePage.toString(), 105, 285, { align: 'center' });
+                
+                currentNotePage++;
+            });
+        });
+        
+        // Save the PDF
+        doc.save(`${filename}.pdf`);
+        
+        // Close the modal
+        closeExportModal();
+        
+        alert(`PDF "${pdfPreviewData.title}" has been generated with ${pdfPreviewData.notes.length} notes!`);
+    }
+    
+    // Close export modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target === exportModal) {
+            closeExportModal();
+        }
+    });
+    
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
