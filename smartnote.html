@@ -2715,164 +2715,255 @@
         }
     }
     
-    function generatePdf() {
-        const filename = pdfFilenameInput.value.trim() || `notes-${new Date().toISOString().slice(0, 10)}`;
-        
-        // Update data from form one more time
-        updatePdfPreviewDataFromForm();
-        
-        // Create PDF using jsPDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // Set PDF properties
-        doc.setProperties({
-            title: pdfPreviewData.title,
-            subject: 'Notes Collection',
-            author: pdfPreviewData.author
+function generatePdf() {
+    const filename = pdfFilenameInput.value.trim() || `notes-${new Date().toISOString().slice(0, 10)}`;
+    
+    // Update data from form one more time
+    updatePdfPreviewDataFromForm();
+    
+    // Create PDF using jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Set PDF properties
+    doc.setProperties({
+        title: pdfPreviewData.title,
+        subject: 'Notes Collection',
+        author: pdfPreviewData.author
+    });
+    
+    // Set font size based on selection
+    let fontSize = 12;
+    if (pdfPreviewData.fontSize === 'small') fontSize = 10;
+    if (pdfPreviewData.fontSize === 'large') fontSize = 14;
+    
+    // Page dimensions
+    const pageWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 20; // 20mm margins
+    const textWidth = pageWidth - (2 * margin); // 170mm width for text
+    
+    // Function to add text with proper line breaks
+    function addTextWithLineBreaks(text, x, y, maxWidth) {
+        const lines = doc.splitTextToSize(text, maxWidth);
+        doc.text(lines, x, y);
+        return lines.length * (fontSize * 0.3528); // Return height in mm
+    }
+    
+    // Add title page
+    doc.setFontSize(fontSize * 2);
+    doc.setTextColor(40, 40, 40);
+    
+    // Split title if too long
+    const titleLines = doc.splitTextToSize(pdfPreviewData.title, textWidth);
+    let titleY = 50;
+    titleLines.forEach(line => {
+        doc.text(line, pageWidth / 2, titleY, { align: 'center' });
+        titleY += fontSize * 1.5 * 0.3528;
+    });
+    
+    if (pdfPreviewData.subtitle) {
+        doc.setFontSize(fontSize * 1.2);
+        doc.setTextColor(100, 100, 100);
+        const subtitleLines = doc.splitTextToSize(pdfPreviewData.subtitle, textWidth);
+        subtitleY = titleY + 10;
+        subtitleLines.forEach(line => {
+            doc.text(line, pageWidth / 2, subtitleY, { align: 'center' });
+            subtitleY += fontSize * 0.3528;
         });
-        
-        // Set font size based on selection
-        let fontSize = 12;
-        if (pdfPreviewData.fontSize === 'small') fontSize = 10;
-        if (pdfPreviewData.fontSize === 'large') fontSize = 14;
-        
-        // Add title page
-        doc.setFontSize(fontSize * 2);
-        doc.setTextColor(40, 40, 40);
-        doc.text(pdfPreviewData.title, 105, 50, { align: 'center' });
-        
-        if (pdfPreviewData.subtitle) {
-            doc.setFontSize(fontSize * 1.2);
-            doc.setTextColor(100, 100, 100);
-            doc.text(pdfPreviewData.subtitle, 105, 70, { align: 'center' });
+        titleY = subtitleY;
+    }
+    
+    doc.setFontSize(fontSize);
+    doc.setTextColor(150, 150, 150);
+    const dateText = `Generated on ${new Date().toLocaleDateString()} by ${pdfPreviewData.author}`;
+    doc.text(dateText, pageWidth / 2, titleY + 20, { align: 'center' });
+    
+    // Add a line separator
+    doc.setDrawColor(52, 152, 219);
+    doc.setLineWidth(0.5);
+    doc.line(margin, titleY + 35, pageWidth - margin, titleY + 35);
+    
+    // Add table of contents
+    doc.addPage();
+    doc.setFontSize(fontSize * 1.4);
+    doc.setTextColor(52, 152, 219);
+    doc.text('Table of Contents', margin, 30);
+    
+    doc.setFontSize(fontSize);
+    doc.setTextColor(80, 80, 80);
+    
+    let tocY = 40;
+    let pageCounter = pdfPreviewData.introduction ? 6 : 5;
+    
+    // Calculate page numbers for table of contents
+    let notePageNumbers = [];
+    let currentNotePage = pageCounter;
+    
+    pdfPreviewData.notes.forEach((note, index) => {
+        const notePages = splitNoteIntoPages(note.content).length;
+        notePageNumbers.push(currentNotePage);
+        currentNotePage += notePages;
+    });
+    
+    // Add table of contents items with proper wrapping
+    pdfPreviewData.notes.forEach((note, index) => {
+        if (tocY > 270) {
+            doc.addPage();
+            tocY = 30;
+            doc.setFontSize(fontSize);
         }
         
-        doc.setFontSize(fontSize);
-        doc.setTextColor(150, 150, 150);
-        doc.text(`Generated on ${new Date().toLocaleDateString()} by ${pdfPreviewData.author}`, 105, 90, { align: 'center' });
+        const tocText = `${index + 1}. ${note.title}`;
+        const tocLines = doc.splitTextToSize(tocText, textWidth - 30); // Reserve space for page number
         
-        // Add a line separator
-        doc.setDrawColor(52, 152, 219);
-        doc.setLineWidth(0.5);
-        doc.line(20, 100, 190, 100);
-        
-        // Add table of contents
-        doc.addPage();
-        doc.setFontSize(fontSize * 1.4);
-        doc.setTextColor(52, 152, 219);
-        doc.text('Table of Contents', 20, 20);
-        
-        doc.setFontSize(fontSize);
-        doc.setTextColor(80, 80, 80);
-        
-        let tocY = 30;
-        let pageCounter = pdfPreviewData.introduction ? 4 : 3;
-        
-        // Calculate page numbers for table of contents
-        let notePageNumbers = [];
-        let currentNotePage = pageCounter;
-        
-        pdfPreviewData.notes.forEach((note, index) => {
-            const notePages = splitNoteIntoPages(note.content).length;
-            notePageNumbers.push(currentNotePage);
-            currentNotePage += notePages;
-        });
-        
-        // Add table of contents items
-        pdfPreviewData.notes.forEach((note, index) => {
-            if (tocY > 270) {
-                doc.addPage();
-                tocY = 20;
+        tocLines.forEach((line, lineIndex) => {
+            doc.text(line, margin + 5, tocY);
+            if (lineIndex === tocLines.length - 1) {
+                doc.text(`................... ${notePageNumbers[index]}`, pageWidth - margin, tocY, { align: 'right' });
             }
-            
-            doc.text(`${index + 1}. ${note.title}`, 25, tocY);
-            doc.text(`................... ${notePageNumbers[index]}`, 180, tocY, { align: 'right' });
             tocY += 8;
         });
         
-        // Add introduction page if there's an introduction
-        if (pdfPreviewData.introduction) {
+        // Add some space between items
+        tocY += 2;
+    });
+    
+    // Add introduction page if there's an introduction
+    if (pdfPreviewData.introduction) {
+        doc.addPage();
+        
+        // Introduction title
+        doc.setFontSize(fontSize * 1.4);
+        doc.setTextColor(52, 152, 219);
+        doc.text('Introduction', margin, 30);
+        
+        // Introduction content with proper wrapping
+        doc.setFontSize(fontSize);
+        doc.setTextColor(60, 60, 60);
+        
+        const introLines = doc.splitTextToSize(pdfPreviewData.introduction, textWidth);
+        let introY = 45;
+        introLines.forEach(line => {
+            if (introY > pageHeight - margin) {
+                doc.addPage();
+                introY = margin;
+                doc.setFontSize(fontSize);
+            }
+            doc.text(line, margin, introY);
+            introY += fontSize * 0.3528 * 1.5;
+        });
+        
+        // Page number
+        doc.setFontSize(fontSize * 0.8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('3', pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
+    
+    // Add notes content with multi-page support and proper text wrapping
+    currentNotePage = pageCounter;
+    
+    pdfPreviewData.notes.forEach((note, index) => {
+        // Split note into pages
+        const notePages = splitNoteIntoPages(note.content);
+        
+        notePages.forEach((contentChunk, chunkIndex) => {
             doc.addPage();
             
-            // Introduction title
-            doc.setFontSize(fontSize * 1.4);
-            doc.setTextColor(52, 152, 219);
-            doc.text('Introduction', 20, 30);
+            let yPosition = margin;
             
-            // Introduction content
+            // Note title (only on first page of multi-page note) with wrapping
+            if (chunkIndex === 0) {
+                doc.setFontSize(fontSize * 1.3);
+                doc.setTextColor(40, 40, 40);
+                
+                const titleText = `${index + 1}. ${note.title}`;
+                const titleLines = doc.splitTextToSize(titleText, textWidth);
+                titleLines.forEach(line => {
+                    doc.text(line, margin, yPosition);
+                    yPosition += fontSize * 0.3528 * 1.5;
+                });
+                
+                // Note date
+                doc.setFontSize(fontSize * 0.7);
+                doc.setTextColor(100, 100, 100);
+                doc.text(note.date, margin, yPosition);
+                yPosition += fontSize * 0.3528 * 1.5;
+                
+                // Separator
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 10;
+            } else {
+                // Continued header for subsequent pages
+                doc.setFontSize(fontSize * 1.1);
+                doc.setTextColor(100, 100, 100);
+                const continuedText = `${index + 1}. ${note.title} (Continued...)`;
+                const continuedLines = doc.splitTextToSize(continuedText, textWidth);
+                continuedLines.forEach(line => {
+                    doc.text(line, margin, yPosition);
+                    yPosition += fontSize * 0.3528 * 1.2;
+                });
+                
+                // Separator
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 10;
+            }
+            
+            // Note content with proper text wrapping
             doc.setFontSize(fontSize);
             doc.setTextColor(60, 60, 60);
             
-            const introLines = doc.splitTextToSize(pdfPreviewData.introduction, 170);
-            doc.text(introLines, 20, 50);
+            const contentLines = doc.splitTextToSize(contentChunk, textWidth);
+            
+            contentLines.forEach(line => {
+                // Check if we need a new page
+                if (yPosition > pageHeight - margin - 20) {
+                    doc.addPage();
+                    yPosition = margin;
+                    
+                    // Add continued header for new page within same note chunk
+                    if (chunkIndex === 0) {
+                        doc.setFontSize(fontSize * 1.1);
+                        doc.setTextColor(100, 100, 100);
+                        doc.text(`${index + 1}. ${note.title} (Continued...)`, margin, yPosition);
+                        yPosition += fontSize * 0.3528 * 1.2;
+                        
+                        // Separator
+                        doc.setDrawColor(200, 200, 200);
+                        doc.setLineWidth(0.3);
+                        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                        yPosition += 10;
+                        
+                        doc.setFontSize(fontSize);
+                        doc.setTextColor(60, 60, 60);
+                    }
+                }
+                
+                doc.text(line, margin, yPosition);
+                yPosition += fontSize * 0.3528 * 1.5;
+            });
             
             // Page number
             doc.setFontSize(fontSize * 0.8);
             doc.setTextColor(150, 150, 150);
-            doc.text('3', 105, 285, { align: 'center' });
-        }
-        
-        // Add notes content with multi-page support
-        currentNotePage = pageCounter;
-        
-        pdfPreviewData.notes.forEach((note, index) => {
-            // Split note into pages
-            const notePages = splitNoteIntoPages(note.content);
+            doc.text(currentNotePage.toString(), pageWidth / 2, pageHeight - 10, { align: 'center' });
             
-            notePages.forEach((contentChunk, chunkIndex) => {
-                doc.addPage();
-                
-                // Note title (only on first page of multi-page note)
-                if (chunkIndex === 0) {
-                    doc.setFontSize(fontSize * 1.3);
-                    doc.setTextColor(40, 40, 40);
-                    doc.text(`${index + 1}. ${note.title}`, 20, 30);
-                    
-                    // Note date
-                    doc.setFontSize(fontSize * 0.9);
-                    doc.setTextColor(100, 100, 100);
-                    doc.text(note.date, 20, 40);
-                    
-                    // Separator
-                    doc.setDrawColor(200, 200, 200);
-                    doc.setLineWidth(0.3);
-                    doc.line(20, 45, 190, 45);
-                    
-                    doc.text(contentChunk, 20, 60);
-                } else {
-                    // Continued header for subsequent pages
-                    doc.setFontSize(fontSize * 1.1);
-                    doc.setTextColor(100, 100, 100);
-                    doc.text(`${index + 1}. ${note.title} (Continued...)`, 20, 30);
-                    
-                    // Separator
-                    doc.setDrawColor(200, 200, 200);
-                    doc.setLineWidth(0.3);
-                    doc.line(20, 35, 190, 35);
-                    
-                    doc.setFontSize(fontSize);
-                    doc.setTextColor(60, 60, 60);
-                    doc.text(contentChunk, 20, 50);
-                }
-                
-                // Page number
-                doc.setFontSize(fontSize * 0.8);
-                doc.setTextColor(150, 150, 150);
-                doc.text(currentNotePage.toString(), 105, 285, { align: 'center' });
-                
-                currentNotePage++;
-            });
+            currentNotePage++;
         });
-        
-        // Save the PDF
-        doc.save(`${filename}.pdf`);
-        
-        // Close the modal
-        closeExportModal();
-        
-        alert(`PDF "${pdfPreviewData.title}" has been generated with ${pdfPreviewData.notes.length} notes!`);
-    }
+    });
+    
+    // Save the PDF
+    doc.save(`${filename}.pdf`);
+    
+    // Close the modal
+    closeExportModal();
+    
+    alert(`PDF "${pdfPreviewData.title}" has been generated with ${pdfPreviewData.notes.length} notes!`);
+}
     
     // Close export modal when clicking outside
     window.addEventListener('click', function(event) {
